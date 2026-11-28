@@ -1,10 +1,9 @@
-
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap");
 
 :root {
   font-family: "DM Sans", sans-serif;
-  color: #202820;
-  background: #f6f7f3;
+  color: #141414;
+  background: #ffffff;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -19,6 +18,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: #ffffff;
 }
 
 button,
@@ -35,6 +35,6 @@ button:disabled {
 }
 
 ::selection {
-  background: #dce9d9;
-  color: #203b28;
+  background: #e2000f;
+  color: #ffffff;
 }

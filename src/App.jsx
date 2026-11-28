@@ -1,7 +1,10 @@
-
 import { useEffect, useState } from "react";
 import { getReviewIdeas, markCopied } from "./api";
+import logo from "./assets/image.png";
 import "./App.css";
+
+// Put your logo file at: public/logo.png
+const LOGO_SRC = logo;
 
 function App() {
   const params = new URLSearchParams(window.location.search);
@@ -10,15 +13,19 @@ function App() {
   const [vendor, setVendor] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [processingId, setProcessingId] = useState("");
+  const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     const loadIdeas = async () => {
       try {
+        setLoading(true);
+        setError("");
+
         const data = await getReviewIdeas(vendorId);
+
         setVendor(data.vendor);
-        setSuggestions(data.suggestions);
+        setSuggestions(data.suggestions || []);
       } catch (err) {
         setError(err.message || "Unable to load review suggestions.");
       } finally {
@@ -30,74 +37,64 @@ function App() {
   }, [vendorId]);
 
   const handleCopy = async (item) => {
-    if (processingId) return;
+    if (processing) return;
 
-    setProcessingId(item.suggestionId);
+    if (!item?.text || !vendor?.googleReviewUrl) {
+      setError("Review suggestion or Google Review URL is missing.");
+      return;
+    }
+
+    setProcessing(true);
     setError("");
 
     try {
+      // Step 1: Copy selected suggestion
       await navigator.clipboard.writeText(item.text);
-      await markCopied(item.suggestionId);
 
+      // Step 2: Save copied suggestion in MongoDB
+      await markCopied(vendorId, item.text);
+
+      // Step 3: Validate Google Review URL
       const url = new URL(vendor.googleReviewUrl);
 
       if (!["https:", "http:"].includes(url.protocol)) {
         throw new Error("Invalid Google Review URL.");
       }
 
+      // Step 4: Redirect to Google Reviews
       window.location.assign(url.href);
     } catch (err) {
       setError(err.message || "Unable to copy the review.");
-      setProcessingId("");
+      setProcessing(false);
     }
   };
 
-  
-if (loading) {
-  return (
-    <main className="page-shell">
-      <div className="loading-screen">
-        <div className="loader-scene">
-          <div className="loader-orbit">
-            <span className="orbit-dot" />
+  if (loading) {
+    return (
+      <main className="page-shell">
+        <div className="tricolor" aria-hidden="true" />
+        <div className="loading-screen">
+          <img className="loading-logo" src={LOGO_SRC} alt="Logo" />
+          <h2>Preparing your experience</h2>
+          <p>Finding the right words for your review...</p>
+
+          <div className="loading-progress">
+            <span />
           </div>
-
-          <div className="loader-plate">
-            <div className="plate-inner">
-              <span className="plate-sparkle">✦</span>
-              <span className="plate-letter">R</span>
-            </div>
-          </div>
-
-          <span className="loader-star star-one">✦</span>
-          <span className="loader-star star-two">✧</span>
-          <span className="loader-star star-three">✦</span>
         </div>
-
-        <span className="loading-eyebrow">A LITTLE MOMENT</span>
-        <h2>Preparing your experience</h2>
-        <p>Finding the right words for your review...</p>
-
-        <div className="loading-progress">
-          <span />
-        </div>
-
-        <span className="loading-caption">
-          MADE WITH CARE
-        </span>
-      </div>
-    </main>
-  );
-}
-
+      </main>
+    );
+  }
 
   if (error && !vendor) {
     return (
       <main className="page-shell">
-        <div className="loading-screen error-screen">
-          <div className="loading-logo">R</div>
+        <div className="tricolor" aria-hidden="true" />
+        <div className="loading-screen">
+          <img className="loading-logo" src={LOGO_SRC} alt="Logo" />
           <h2>Something went wrong</h2>
           <p>{error}</p>
+
           <button
             className="retry-button"
             onClick={() => window.location.reload()}
@@ -111,68 +108,56 @@ if (loading) {
 
   return (
     <main className="page-shell">
+      <div className="tricolor" aria-hidden="true" />
+
       <header className="topbar">
-        <a className="brand" href="/" aria-label="Review home">
-          <span className="brand-mark">R</span>
-          <span className="brand-name">REVIEW MOMENT</span>
+        <a className="brand" href="/" aria-label="Home">
+          <img className="brand-logo" src={LOGO_SRC} alt="Logo" />
         </a>
 
         <span className="topbar-note">
           <span className="status-dot" />
-          YOUR VOICE MATTERS
+          Your voice matters
         </span>
       </header>
 
       <section className="review-container">
         <section className="hero">
           <div className="hero-content">
-            <span className="hero-eyebrow">
-              A MOMENT WORTH SHARING
-            </span>
-
             <h1>
               Your experience.
               <br />
-              <span>Your words.</span>
+              Your words.
             </h1>
 
             <p className="hero-description">
-              Start with a suggestion, make it personal,
-              and share what genuinely made your visit special.
+              Start with a suggestion, make it personal, and share what
+              genuinely made your visit special.
             </p>
 
             <div className="restaurant-chip">
-              <span className="restaurant-chip-icon">✦</span>
+              <span className="restaurant-chip-dot" />
               {vendor?.name}
             </div>
           </div>
 
           <div className="hero-art" aria-hidden="true">
-            <div className="art-circle art-circle-one" />
-            <div className="art-circle art-circle-two" />
-            <span className="art-star">✳</span>
-            <span className="art-leaf">❋</span>
-            <span className="art-small-star">✦</span>
+            <span className="arc arc-saffron" />
+            <span className="arc arc-white" />
+            <span className="arc arc-green" />
           </div>
-
-          <span className="hero-bottom-label">
-            GOOD FOOD. GOOD MOMENTS. GOOD WORDS.
-          </span>
         </section>
 
         <section className="suggestions-section">
           <div className="section-heading">
             <div>
-              <span className="section-eyebrow">MAKE IT YOURS</span>
               <h2>Choose your words</h2>
-              <p>
-                Pick a starting point that reflects your genuine experience.
-              </p>
+              <p>Pick a starting point that reflects your genuine experience.</p>
             </div>
 
             <div className="suggestion-count">
               <strong>{suggestions.length.toString().padStart(2, "0")}</strong>
-              <span>IDEAS</span>
+              <span>ideas</span>
             </div>
           </div>
 
@@ -188,19 +173,17 @@ if (loading) {
               <button
                 type="button"
                 className="suggestion-card"
-                key={item.suggestionId}
-                disabled={Boolean(processingId)}
+                key={`${index}-${item.text}`}
+                disabled={processing}
                 onClick={() => handleCopy(item)}
               >
                 <div className="suggestion-top">
-                  <span className="suggestion-number">
-                    0{index + 1}
+                  <span className="suggestion-quote" aria-hidden="true">
+                    “
                   </span>
 
                   <span className="click-label">
-                    {processingId === item.suggestionId
-                      ? "PLEASE WAIT..."
-                      : "SELECT & COPY ↗"}
+                    {processing ? "Please wait..." : "Select & copy"}
                   </span>
                 </div>
 
@@ -209,9 +192,9 @@ if (loading) {
                 <div className="card-bottom">
                   <span className="card-copy-icon">↗</span>
                   <span>
-                    {processingId === item.suggestionId
+                    {processing
                       ? "Processing your selection"
-                      : "Use this suggestion"}
+                      : "Copy and open Google Reviews"}
                   </span>
                 </div>
               </button>
@@ -228,15 +211,15 @@ if (loading) {
         </section>
 
         <section className="guidance-note">
-          <span className="guidance-icon">✳</span>
+          <span className="guidance-icon">✓</span>
           <p>
-            Make it yours. Edit the suggestion to reflect what you
-            actually experienced before sharing your review.
+            Make it yours. Edit the suggestion to reflect what you actually
+            experienced before sharing your review.
           </p>
         </section>
 
         <footer className="page-footer">
-          <span className="footer-brand">REVIEW MOMENT</span>
+          <img className="footer-logo" src={LOGO_SRC} alt="Logo" />
           <span>Thoughtfully powered by AI</span>
         </footer>
       </section>
